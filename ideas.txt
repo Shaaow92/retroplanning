@@ -1,0 +1,83 @@
+Pour décupler la vitesse de **clipdev**, l'objectif principal est de passer d'un modèle linéaire (séquentiel) à un **modèle orienté graphe de dépendances (DAG)** alimenté par des **agents spécialisés**.
+Voici une proposition d'architecture multi-agents taillée sur mesure pour clipdev.
+## 1. Vision Globale : Le Modèle Orchestrateur / Workers
+Plutôt que d'exécuter les commandes une par une, l'interception du presse-papier confie le payload à un **Agent Orchestrateur**. Celui-ci ventile les opérations vers des agents spécialisés s'exécutant en parallèle dans des goroutines isolées.
+```
+                  ┌───────────────────────────┐
+                  │   Copilot Clipboard      │
+                  └─────────────┬─────────────┘
+                                │
+                                ▼
+                  ┌───────────────────────────┐
+                  │    Agent Orchestrateur    │
+                  │   (Analyse & DAG Routing) │
+                  └──────┬──────────┬─────────┘
+                         │          │
+         ┌───────────────┘          └───────────────┐
+         ▼                                          ▼
+┌──────────────────┐                     ┌──────────────────┐
+│  Agent RECON     │ (Concurrent)        │  Agent ARCHIVE   │ (Async)
+│  (Read/Grep/Tree)│                     │  (Obsidian Sync) │
+└────────┬─────────┘                     └──────────────────┘
+         │
+         ▼ (Attente dépendance)
+┌──────────────────┐
+│  Agent WORKER    │ (Post-Approval)
+│  (Patch/Write)   │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│  Agent QA        │ (Auto-Trigger)
+│  (Go Test/Lint)  │
+└──────────────────┘
+
+```
+## 2. Répartition des Rôles par Agent
+### 1. Agent Orchestrateur (Dispatcher)
+ * **Rôle :** Parse le Markdown/JSON reçu, identifie les instructions indépendantes et construit l'arbre d'exécution.
+ * **Accélération :** Il isole immédiatement les tâches de lecture sans état (read-only) pour les lancer en parallèle, tout en plaçant les modifications système (write/patch) dans la file de validation HITL.
+### 2. Agent Reconnaissance (Read-Only Workers)
+ * **Rôle :** Prend en charge les opérations non destructives (grep, read, find, tree, git status).
+ * **Accélération :** Exécution 100 % parallèle via un pool de goroutines (sync.WaitGroup). Si Copilot demande la lecture de 5 fichiers et un grep, l'Agent Recon exécute les 6 requêtes simultanément.
+### 3. Agent Archiviste (Obsidian Sync)
+ * **Rôle :** Responsable de la mise en forme du cartouche bleu ([!info]), de l'horodatage et de l'écriture dans la note de suivi.
+ * **Accélération :** Fonctionne en **mode totalement asynchrone** (Fire & Forget). Il ne bloque jamais le flux principal de développement.
+### 4. Agent QA / Continuous Validation
+ * **Rôle :** Surveille le système de fichiers. Dès que l'Agent Worker applique un patch validé par l'utilisateur, l'Agent QA déclenche automatiquement les tests unitaires (go test ./...) ou la vérification du linter en arrière-plan.
+ * **Accélération :** Donne un feedback immédiat sur les régressions sans attendre que l'utilisateur relance des commandes manuellement.
+## 3. Évolution du Schema JSON clipdev
+Pour permettre cette orchestration, le JSON peut s'enrichir des clés agent et depends_on :
+```json
+[
+  {
+    "_clipdev": "1.0",
+    "id": "job-1",
+    "agent": "recon",
+    "op": "grep",
+    "pattern": "type ObsidianConfig"
+  },
+  {
+    "_clipdev": "1.0",
+    "id": "job-2",
+    "agent": "recon",
+    "op": "read",
+    "path": "internal/parser/parser.go"
+  },
+  {
+    "_clipdev": "1.0",
+    "id": "job-3",
+    "agent": "worker",
+    "op": "patch",
+    "path": "internal/parser/parser.go",
+    "depends_on": ["job-1", "job-2"]
+  }
+]
+
+```
+## 4. Impact sur l'Interface Web (UI)
+Au lieu d'un seul fil linéaire, le panneau central de l'UI affiche des **lignes de traitement parallèles (Swimlanes)** par agent :
+ * **[Recon Pool]** grep + read ➔ *Terminés en 8ms (Parallèle)*
+ * **[Worker]** patch ➔ *En attente de validation HITL*
+ * **[Obsidian]** DevLog.md ➔ *Archivé en arrière-plan*
+Souhaites-tu que l'on commence par adapter le **Worker Pool en Go** pour gérer l'exécution parallèle des requêtes read/grep, ou préfères-tu faire évoluer le **schema JSON** pour intégrer la notion de dépendances ?
