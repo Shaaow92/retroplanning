@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Maquette Rétroplanning E2C</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img src="E2Clogo.png" alt="Logo E2C" class="brand-logo-img" />
+        <div>
+          <strong>Rétroplanning E2C</strong>
+          <small>Maquette de suivi des actions</small>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="index.html" class="active">Rétroplanning</a>
+        <a href="#calendrier">Calendrier</a>
+        <a href="#suivi">Étapes</a>
+        <a href="#ajout-projet">Ajouter un projet</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro">
+      <h1>Rétroplanning — Suivi des actions E2C</h1>
+      <p>On part de la date de l'action et on remonte dans le temps : cochez une étape pour la passer en <strong>Fait</strong> ou cliquez sur son badge de statut (<em>À faire</em>, <em>En cours</em>, <em>Fait</em>).</p>
+    </section>
+
+    <section id="calendrier" class="layout">
+      <div class="box">
+        <div class="box-head">
+          <h2>Calendrier — Décembre (1 au 31)</h2>
+          <span id="globalProgress" class="badge-info">0% fait</span>
+        </div>
+        <table class="cal">
+          <thead>
+            <tr>
+              <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
+            </tr>
+          </thead>
+          <tbody id="calBody"></tbody>
+        </table>
+      </div>
+
+      <aside id="suivi" class="box">
+        <h2>Actions E2C</h2>
+        <div id="projectTabs" class="tabs"></div>
+        <div id="detailBox" class="detail"></div>
+      </aside>
+    </section>
+
+    <section id="ajout-projet" class="box form-section">
+      <div class="box-head">
+        <h2>Ajouter un projet et ses étapes de rétroplanning</h2>
+        <span class="hint-text">Les étapes s'affichent du plus récent vers la date cible</span>
+      </div>
+
+      <form id="addProjectForm" class="project-form">
+        <div class="grid-3">
+          <label class="field">
+            <span>Nom du projet</span>
+            <input type="text" id="projTitle" placeholder="Ex. Forum alternance" required />
+          </label>
+          <label class="field">
+            <span>Jour début (1–31)</span>
+            <input type="number" id="projStart" min="1" max="31" value="24" required />
+          </label>
+          <label class="field">
+            <span>Jour fin (1–31)</span>
+            <input type="number" id="projEnd" min="1" max="31" value="29" required />
+          </label>
+        </div>
+
+        <div class="grid-3">
+          <label class="field">
+            <span>Date d'échéance (action)</span>
+            <input type="text" id="projDeadline" placeholder="Ex. 29 décembre" required />
+          </label>
+          <label class="field">
+            <span>Responsable principal</span>
+            <input type="text" id="projOwner" placeholder="Ex. Formateur référent" required />
+          </label>
+          <label class="field">
+            <span>Couleur du projet</span>
+            <select id="projColor">
+              <option value="#0284c7">Bleu clair</option>
+              <option value="#16a34a">Vert clair</option>
+              <option value="#eab308">Jaune</option>
+              <option value="#9333ea">Violet</option>
+              <option value="#e11d48">Rose</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="steps-builder">
+          <div class="steps-builder-head">
+            <strong>Étapes à préparer (en remontant vers la date cible)</strong>
+            <button type="button" id="addStepRowBtn" class="btn-secondary">+ Ajouter une étape</button>
+          </div>
+          <div id="stepRowsContainer" class="step-rows"></div>
+        </div>
+
+        <div class="form-footer">
+          <button type="submit" class="btn-primary">Enregistrer le projet</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
